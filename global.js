@@ -77,12 +77,13 @@ function updateChartFromGroups() {
 // MAP RENDERING
 // =========================================
 async function renderLatMapWithWorld(bands, userGroups) {
-    const width = 360;
+    const width = 330;
     const height = 200;
+    const margin = { right: 53};
 
     const svg = d3.select("#latmap")
         .append("svg")
-        .attr("width", width)
+        .attr("width", width + margin.right)
         .attr("height", height);
 
     const projection = d3.geoNaturalEarth1()
@@ -94,14 +95,24 @@ async function renderLatMapWithWorld(bands, userGroups) {
     const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
     const countries = topojson.feature(world, world.objects.countries);
 
+    svg.append("clipPath")
+   .attr("id", "map-clip")
+   .append("rect")
+   .attr("x", 0)
+   .attr("y", 0)
+   .attr("width", width)
+   .attr("height", height);
+
+    // Draw map clipped to band area
     svg.append("g")
-        .selectAll("path")
-        .data(countries.features)
-        .join("path")
-        .attr("d", path)
-        .attr("fill", "#e0e0e0")
-        .attr("stroke", "#888")
-        .attr("stroke-width", 0.5);
+    .attr("clip-path", "url(#map-clip)")
+    .selectAll("path")
+    .data(countries.features)
+    .join("path")
+    .attr("d", path)
+    .attr("fill", "#e0e0e0")
+    .attr("stroke", "#888")
+    .attr("stroke-width", 0.5);
 
     const yFromLat = d3.scaleLinear()
         .domain([-90, 90])
@@ -131,6 +142,19 @@ async function renderLatMapWithWorld(bands, userGroups) {
             renderLatMapWithWorld(latitudeBands, userGroups);
             updateChartFromGroups();
         });
+    svg.append("g")
+    .selectAll(".lat-label")
+    .data(bands)
+    .enter()
+    .append("text")
+    .attr("class", "lat-label")
+    .attr("x", width + 53)
+    .attr("y", d => yFromLat((d.min + d.max) / 2))
+    .attr("dy", "0.35em")
+    .attr("text-anchor", "end")
+    .style("font-size", "9px")
+    .style("fill", "#333")
+    .text(d => `${d.max}° to ${d.min}°`);
 }
 
 // Color scale
@@ -268,13 +292,12 @@ function renderTASChart(groupedData) {
     svg.selectAll(".legend")
         .data(groupedData)
         .join("g")
-        .attr("transform", (d, i) => `translate(${width - 60},${i * 20})`)
+        .attr("transform", (d, i) => `translate(${width - 580},${i * 20})`)
         .each(function(d) {
             d3.select(this).append("rect")
                 .attr("width", 12)
                 .attr("height", 12)
                 .attr("fill", groupColorScale(Number(d.name.replace("Group ", ""))));
-
             d3.select(this).append("text")
                 .attr("x", 18)
                 .attr("y", 10)
@@ -283,7 +306,7 @@ function renderTASChart(groupedData) {
         });
 
     // =====================================
-    // ANNOTATIONS — new fixed positions
+    // ANNOTATIONS 
     // =====================================
     if (groupsMatchDefaultPattern(userGroups)) {
 
@@ -302,9 +325,8 @@ function renderTASChart(groupedData) {
                 t.append("tspan").text("the rest of the planet.").attr("x", tx).attr("dy", "1.2em");
             });
 
-        // Arrow perfectly aligned downward from last tspan
         svg.append("line")
-            .attr("x1", tx + 220)
+            .attr("x1", tx + 250)
             .attr("y1", ty + 5)
             .attr("x2", x(2010))
             .attr("y2", y(1.55))
@@ -314,14 +336,14 @@ function renderTASChart(groupedData) {
 
         // ----- BOTTOM ANNOTATION -----
         const ax = x(1930);
-        const ay = height + 80;   // new safe position below axis
+        const ay = height + 80;
 
         svg.append("text")
             .attr("class", "annotation")
             .attr("x", ax)
             .attr("y", ay)
             .call(t => {
-                t.append("tspan").text("Between ~1940 and 1970, global temperatures").attr("x", ax).attr("dy", "0em");
+                t.append("tspan").text("Between ~1940 and 1970, artic temperatures").attr("x", ax).attr("dy", "0em");
                 t.append("tspan").text("temporarily decreased due to aerosols").attr("x", ax).attr("dy", "1.2em");
                 t.append("tspan").text("reflecting sunlight back into space.").attr("x", ax).attr("dy", "1.2em");
             });
@@ -329,9 +351,9 @@ function renderTASChart(groupedData) {
         // Arrow pointing up to dip
         svg.append("line")
             .attr("x1", x(1955))
-            .attr("x2", x(1968))
+            .attr("x2", x(1973))
             .attr("y1", ay - 15)
-            .attr("y2", y(-0.1))
+            .attr("y2", y(-0.55))
             .attr("stroke", "black")
             .attr("stroke-width", 1.2)
             .attr("marker-end", "url(#arrowhead)");
