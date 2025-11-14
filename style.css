@@ -1,6 +1,114 @@
-.viz-container {
+/* --- TITLE STYLING --- */
+.title {
+    text-align: center;
+    font-size: 38px;
+    margin-top: 20px;
+    color: #1a1a1a;
+}
+
+.subtitle {
+    text-align: center;
+    font-size: 24px;
+    margin-top: -10px;
+    color: #333;
+}
+
+.subsubtitle {
+    text-align: center;
+    font-size: 17px;
+    margin-top: -5px;
+    margin-bottom: 15px;
+    color: #555;
+}
+
+/* --- MAIN SPLIT LAYOUT --- */
+.main-flex-wrapper {
     display: flex;
-    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
+    margin-top: 20px;
+}
+
+/* LEFT: Chart */
+#linechart {
+    flex-shrink: 0;
+}
+
+/* RIGHT SIDE */
+.right-side {
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 20px;
+    width: 360px;
+}
+
+/* Instructions to the right of plot */
+.instructions-right {
+    text-align: center;
+    font-size: 15px;
+    color: #444;
+    margin-bottom: 15px;
+    max-width: 320px;
+}
+
+/* Globe container */
+#latmap {
+    margin-top: 10px;
+}
+
+/* Buttons under globe */
+.button-row {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.button-row button {
+    padding: 7px 14px;
+    border-radius: 4px;
+    border: 1px solid #aaa;
+    cursor: pointer;
+    background: #f5f5f5;
+}
+
+.button-row button:hover {
+    background: #e9e9e9;
+}
+
+/* --- ANNOTATIONS --- */
+.annotation {
+    font-size: 13px;
+    fill: #222;
+}
+
+/* --- WRITE-UP --- */
+.writeup-section {
+    margin-top: 50px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 15px;
+    line-height: 1.55;
+    color: #333;
+}
+
+.writeup-title {
+    text-align: center;
+    font-size: 26px;
+}
+
+.draft-image {
+    width: 100%;
+    margin: 20px 0;
+    border-radius: 6px;
+}
+
+#linechart {
+    overflow: visible;  
+}
+
+.main-flex-wrapper {
+    overflow: visible;
 }
