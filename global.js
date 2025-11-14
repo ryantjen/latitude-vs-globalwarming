@@ -1,4 +1,5 @@
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm';
+import * as topojson from "https://cdn.jsdelivr.net/npm/topojson-client@3/+esm";
 
 async function loadTASData() {
     try {
@@ -36,51 +37,80 @@ function updateChartFromGroups() {
     renderTASChart(groupedData);
 }
 
-function renderLatMap(bands, userGroups) {
-  const width = 120;
-  const height = 400;
+async function renderLatMapWithWorld(bands, userGroups) {
+    const width = 400;
+    const height = 200;
 
-  const svg = d3.select("#latmap")
-    .append("svg")
-    .attr("width", width)
-    .attr("height", height);
+    const svg = d3.select("#latmap")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height);
 
-  const y = d3.scaleBand()
-    .domain(bands.map(b => b.id))
-    .range([0, height])
-    .padding(0.02);
+    // --- 1. Projection ---
+    const projection = d3.geoNaturalEarth1()
+        .scale(70)
+        .translate([width / 2, height / 2]);
 
-  svg.selectAll("rect")
-    .data(bands)
-    .join("rect")
-    .attr("x", 0)
-    .attr("y", d => y(d.id))
-    .attr("width", width)
-    .attr("height", y.bandwidth())
-    .attr("fill", "#ddd")
-    .attr("stroke", "#555")
-    .attr("data-id", d => d.id)
-    .on("click", function (event, d) {
-      handleBandClick(d.id);
-      updateLatMapColors(svg, bands, userGroups);
-      updateChartFromGroups();
-    });
+    const path = d3.geoPath(projection);
 
-  updateLatMapColors(svg, bands, userGroups);
+    // --- 2. Load world map ---
+    const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
+    const countries = topojson.feature(world, world.objects.countries);
+
+    // Draw the world map
+    svg.append("g")
+        .selectAll("path")
+        .data(countries.features)
+        .join("path")
+        .attr("d", path)
+        .attr("fill", "#e0e0e0")
+        .attr("stroke", "#888")
+        .attr("stroke-width", 0.5);
+
+    // --- 3. Create a scale from latitude → y position ---
+    const yFromLat = d3.scaleLinear()
+        .domain([-90, 90])
+        .range([height, 0]);
+
+    // --- 4. Draw the latitude band rectangles on top ---
+    svg.append("g")
+        .selectAll("rect")
+        .data(bands)
+        .join("rect")
+        .attr("x", 0)
+        .attr("width", width)
+        .attr("y", d => yFromLat(d.max))
+        .attr("height", d => yFromLat(d.min) - yFromLat(d.max))
+        .attr("fill", d => {
+            for (let g = 1; g <= 3; g++) {
+                if (userGroups[g].has(d.id)) return groupColorScale(g);
+            }
+            return "rgba(255,255,255,0.0)";  // transparent
+        })
+        .attr("stroke", "#000")
+        .attr("stroke-width", 0.8)
+        .attr("fill-opacity", 0.4)
+        .style("cursor", "pointer")
+        .on("click", (event, d) => {
+            handleBandClick(d.id);
+            renderUpdatedColors(svg, bands, userGroups, yFromLat, width);
+            updateChartFromGroups();
+        });
 }
 
 const groupColorScale = d3.scaleOrdinal()
     .domain([1, 2, 3])
     .range(d3.schemeSet1);
 
-function updateLatMapColors(svg, bands, userGroups) {
-  svg.selectAll("rect")
-    .attr("fill", d => {
-      for (let g = 1; g <= 3; g++) {
-        if (userGroups[g].has(d.id)) return groupColorScale(g);
-      }
-      return "#ddd"; // default
-    });
+function renderUpdatedColors(svg, bands, userGroups, yFromLat, width) {
+    svg.selectAll("rect")
+        .data(bands)
+        .attr("fill", d => {
+            for (let g = 1; g <= 3; g++) {
+                if (userGroups[g].has(d.id)) return groupColorScale(g);
+            }
+            return "rgba(255,255,255,0.0)";
+        });
 }
 
 function handleBandClick(bandId) {
@@ -135,7 +165,7 @@ function renderTASChart(groupedData) {
   const allValues = groupedData.flatMap(d => d.values);
 
   // SVG setup
-  const width = 800, height = 400;
+  const width = 700, height = 400;
   const margin = { top: 40, right: 120, bottom: 40, left: 60 };
 
   const svg = d3.select("#linechart").append("svg")
@@ -198,5 +228,5 @@ function renderTASChart(groupedData) {
     .style("font-size", "12px");
 }
 
-renderLatMap(latitudeBands, userGroups);
+renderLatMapWithWorld(latitudeBands, userGroups);
 updateChartFromGroups();
